@@ -9,7 +9,7 @@ import SwiftUI
 import UIKit
 
 fileprivate extension UIFont {
-	func with(weight: Weight?, width: Width?, symbolicTraits: CTFontSymbolicTraits) -> UIFont {
+	func with(weight: Weight? = nil, width: Width? = nil, symbolicTraits: CTFontSymbolicTraits = [], feature: [UIFontDescriptor.FeatureKey: Int]? = nil) -> UIFont {
 		var mergedsymbolicTraits = CTFontGetSymbolicTraits(self)
 		mergedsymbolicTraits.formUnion(symbolicTraits)
 		
@@ -26,6 +26,12 @@ fileprivate extension UIFont {
 		fontAttributes[.family] = familyName
 		fontAttributes[.traits] = traits
 		
+		if let feature {
+			var mergedFeatureSettings = fontAttributes[.featureSettings] as? [[UIFontDescriptor.FeatureKey: Int]] ?? []
+			mergedFeatureSettings.append(feature)
+			fontAttributes[.featureSettings] = mergedFeatureSettings
+		}
+		
 		let rv_ = UIFont(descriptor: UIFontDescriptor(fontAttributes: fontAttributes), size: pointSize)
 		let rv: UIFont
 		if symbolicTraits != [] {
@@ -34,29 +40,40 @@ fileprivate extension UIFont {
 			rv = rv_
 		}
 		
-		print("Converted\n\t\(self)\nto\n\t\(rv)\n\n")
+//		print("Converted\n\t\(self)\nto\n\t\(rv)\n\n")
 		
 		return rv
 	}
 	
-	func with(traits: CTFontSymbolicTraits) -> UIFont {
-		return self.with(weight: nil, width: nil, symbolicTraits: traits)
+	func with(design: UIFontDescriptor.SystemDesign) -> UIFont? {
+		guard let designedDescriptor = fontDescriptor.withDesign(design) else { return nil }
+		return UIFont(descriptor: designedDescriptor, size: pointSize)
 	}
 	
-	func with(weight: UIFont.Weight) -> UIFont {
-		return self.with(weight: weight, width: nil, symbolicTraits: [])
-	}
-	
-	func with(width: UIFont.Width) -> UIFont {
-		return self.with(weight: nil, width: width, symbolicTraits: [])
+	func with(featureType type: Int, selector: Int) -> UIFont? {
+		return with(feature: [
+			UIFontDescriptor.FeatureKey.featureIdentifier : type as Int,
+			UIFontDescriptor.FeatureKey.typeIdentifier : selector as Int
+		])
 	}
 	
 	var bold: UIFont {
-		return with(traits: .traitBold)
+		return with(symbolicTraits: .traitBold)
 	}
 	
 	var italic: UIFont {
-		return with(traits: .traitItalic)
+		return with(symbolicTraits: .traitItalic)
+	}
+	
+	var monospaced: UIFont {
+		let weight: UIFont.Weight
+		if let existingWeight = (CTFontCopyTraits(self) as NSDictionary)[kCTFontWeightTrait as String] as? CGFloat {
+			weight = UIFont.Weight(rawValue: existingWeight)
+		} else {
+			weight = .regular
+		}
+		
+		return with(design: .monospaced) ?? UIFont(name: "Menlo", size: pointSize)!.with(weight: weight)
 	}
 }
 
@@ -158,8 +175,8 @@ fileprivate enum SwiftUIFontProvider {
 			} else {
 				rv = UIFont.systemFont(ofSize: size)
 			}
-			if let design, let systemDesign = UIFontDescriptor.SystemDesign(design), let designedDescriptor = rv.fontDescriptor.withDesign(systemDesign) {
-				return UIFont(descriptor: designedDescriptor, size: rv.pointSize)
+			if let design, let systemDesign = UIFontDescriptor.SystemDesign(design), let designedFont = rv.with(design: systemDesign) {
+				return designedFont
 			}
 			return rv
 		case let .textStyle(textStyle, _, _):
@@ -197,8 +214,10 @@ fileprivate enum SwiftUIFontProvider {
 				font = font.italic
 				break
 			case "MonospacedModifier":
+				font = font.monospaced ?? font
 				break
 			case "MonospacedDigitModifier":
+				font = font.with(featureType: kNumberSpacingType, selector: kMonospacedNumbersSelector) ?? font
 				break
 			case "WeightModifier":
 				if let weight = toKeyValueDictionary(reflection, deep: true).value(forKeyPath: "modifier.weight.value") as? CGFloat {
@@ -211,6 +230,13 @@ fileprivate enum SwiftUIFontProvider {
 				}
 				break
 			case "LeadingModifier":
+				//Unsupported
+				break
+			case "FeatureSettingModifier":
+				let dict = toKeyValueDictionary(reflection, deep: true)
+				if let type = dict.value(forKeyPath: "modifier.type") as? Int, let selector = dict.value(forKeyPath: "modifier.selector") as? Int {
+					font = font.with(featureType: type, selector: selector) ?? font
+				}
 				break
 			default:
 				break
