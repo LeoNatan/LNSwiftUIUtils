@@ -16,8 +16,5 @@ let package = Package(
     targets: [
         .target(
             name: "LNSwiftUIUtils"),
-        .testTarget(
-            name: "LNSwiftUIUtilsTests",
-            dependencies: ["LNSwiftUIUtils"]),
     ]
 )
