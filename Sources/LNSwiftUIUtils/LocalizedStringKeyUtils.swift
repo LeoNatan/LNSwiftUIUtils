@@ -9,13 +9,7 @@ import SwiftUI
 
 public extension LocalizedStringKey {
 	var stringKey: String {
-		var rv: String!
-		inspect(self) { label, value in
-			guard label == "key" else { return }
-			rv = (value as! String)
-		}
-		
-		return rv!
+		return Mirror(reflecting: self).descendant("key") as! String
 	}
 }
 

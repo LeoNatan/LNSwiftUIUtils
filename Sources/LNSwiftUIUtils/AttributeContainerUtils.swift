@@ -22,19 +22,18 @@ public extension AttributeContainer {
 			rv.uiKit.backgroundColor = UIColor(backgroundColor)
 		}
 		if let strikethroughStyle = rv.swiftUI.strikethroughStyle {
-			let dict = toKeyValueDictionary(strikethroughStyle)
-			let style = dict.value(forKeyPath: "nsUnderlineStyle") as? NSUnderlineStyle
-			let color = dict.value(forKeyPath: "color") as? SwiftUI.Color
-			
+			let mirror = Mirror(reflecting: strikethroughStyle)
+			let style = mirror.descendant("nsUnderlineStyle") as? NSUnderlineStyle
+			let color = mirror.descendant("color") as? SwiftUI.Color
 			rv.uiKit.strikethroughStyle = style
 			if let color {
 				rv.uiKit.strikethroughColor = UIColor(color)
 			}
 		}
 		if let underlineStyle = rv.swiftUI.underlineStyle {
-			let dict = toKeyValueDictionary(underlineStyle)
-			let style = dict.value(forKeyPath: "nsUnderlineStyle") as? NSUnderlineStyle
-			let color = dict.value(forKeyPath: "color") as? SwiftUI.Color
+			let mirror = Mirror(reflecting: underlineStyle)
+			let style = mirror.descendant("nsUnderlineStyle") as? NSUnderlineStyle
+			let color = mirror.descendant("color") as? SwiftUI.Color
 			
 			rv.uiKit.underlineStyle = style
 			if let color {
