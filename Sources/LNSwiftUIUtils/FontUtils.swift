@@ -13,7 +13,7 @@ fileprivate extension UIFont {
 		var mergedsymbolicTraits = CTFontGetSymbolicTraits(self)
 		mergedsymbolicTraits.formUnion(symbolicTraits)
 		
-		var traits = NSMutableDictionary(dictionary: CTFontCopyTraits(self))// fontDescriptor.fontAttributes[.traits] as? [String: Any] ?? [:]
+		let traits = NSMutableDictionary(dictionary: CTFontCopyTraits(self))
 		if let weight {
 			traits[kCTFontWeightTrait as String] = weight
 		}
@@ -134,15 +134,13 @@ public extension UIFont.TextStyle {
 
 public extension SwiftUI.Font {
 	var uiFont: UIFont? {
-		var rv: UIFont?
-		
 		guard let base = Mirror(reflecting: self).descendant("provider", "base") else { return nil }
 		return SwiftUI.Font.UIFontProvider(from: base)?.uiFont
 	}
 }
 
 fileprivate extension SwiftUI.Font {
-	fileprivate enum UIFontProvider {
+	enum UIFontProvider {
 		case system(size: CGFloat, weight: Font.Weight?, design: Font.Design?)
 		case textStyle(Font.TextStyle, weight: Font.Weight?, design: Font.Design?)
 		case platform(CTFont)
@@ -177,8 +175,6 @@ fileprivate extension SwiftUI.Font {
 			if let regex = try? NSRegularExpression(pattern: "ModifierProvider<(.*)>"), let match = regex.firstMatch(in: desc, range: NSRange(desc.startIndex..<desc.endIndex, in: desc)) {
 				let modifier = desc[Range(match.range(at: 1), in: desc)!]
 				
-				var font: UIFont?
-				
 				guard let sFont = mirror.descendant("base") as? Font, var font = sFont.uiFont else { return nil }
 				
 //				print(modifier)
@@ -191,7 +187,7 @@ fileprivate extension SwiftUI.Font {
 					font = font.italic
 					break
 				case "MonospacedModifier":
-					font = font.monospaced ?? font
+					font = font.monospaced
 					break
 				case "MonospacedDigitModifier":
 					font = font.with(featureType: kNumberSpacingType, selector: kMonospacedNumbersSelector) ?? font
@@ -244,21 +240,15 @@ fileprivate extension SwiftUI.Font {
 				
 				self = .textStyle(style, weight: props.weight, design: props.design)
 			case "PlatformFontProvider":
-				var font = mirror.descendant("font") as? UIFont
-				
-				guard let font else { return nil }
+				guard let font = mirror.descendant("font") as? UIFont else { return nil }
 				self = .platform(font)
 			case "NamedProvider":
-				var name = mirror.descendant("name") as? String
-				var size = mirror.descendant("size") as? CGFloat
-				var textStyle = mirror.descendant("textStyle") as? SwiftUI.Font.TextStyle
-				
-				guard let name, let size else { return nil }
+				guard let name = mirror.descendant("name") as? String, let size = mirror.descendant("size") as? CGFloat else { return nil }
 				
 				let font = UIFont(name: name, size: size)
 				guard var font else { return nil }
 				
-				if let textStyle {
+				if let textStyle = mirror.descendant("textStyle") as? SwiftUI.Font.TextStyle {
 					font = UIFontMetrics(forTextStyle: UIFont.TextStyle(textStyle)).scaledFont(for: font)
 				}
 				
