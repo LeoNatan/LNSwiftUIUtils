@@ -2,7 +2,8 @@
 //  AttributeContainerUtils.swift
 //	LNSwiftUIUtils
 //
-//  Created by Leo Natan on 21/10/2023.
+//  Created by Léo Natan on 2023-10-21.
+//  Copyright © 2023-2024 Léo Natan. All rights reserved.
 //
 
 import Foundation
