@@ -9,6 +9,32 @@
 import SwiftUI
 import UIKit
 
+public extension EnvironmentValues {
+	var uiFont: UIFont? {
+		font?.uiFont(in: self)
+	}
+}
+
+public extension SwiftUI.Font {
+	func uiFont(in environment: EnvironmentValues) -> UIFont? {
+		if #available(iOS 26.0, *) {
+			return uiFont(in: environment.fontResolutionContext)
+		} else {
+			return uiFont
+		}
+	}
+	
+	var uiFont: UIFont? {
+		guard let base = Mirror(reflecting: self).descendant("provider", "base") else { return nil }
+		return SwiftUI.Font.UIFontProvider(from: base)?.uiFont
+	}
+	
+	@available(iOS 26.0, *)
+	func uiFont(in context: SwiftUI.Font.Context) -> UIFont? {
+		return resolve(in: context).ctFont
+	}
+}
+
 fileprivate extension UIFont {
 	func with(weight: Weight? = nil, width: Width? = nil, symbolicTraits: CTFontSymbolicTraits = [], feature: [UIFontDescriptor.FeatureKey: Int]? = nil) -> UIFont {
 		var mergedsymbolicTraits = CTFontGetSymbolicTraits(self)
@@ -130,13 +156,6 @@ public extension UIFont.TextStyle {
 		@unknown default:
 			self = .body
 		}
-	}
-}
-
-public extension SwiftUI.Font {
-	var uiFont: UIFont? {
-		guard let base = Mirror(reflecting: self).descendant("provider", "base") else { return nil }
-		return SwiftUI.Font.UIFontProvider(from: base)?.uiFont
 	}
 }
 
