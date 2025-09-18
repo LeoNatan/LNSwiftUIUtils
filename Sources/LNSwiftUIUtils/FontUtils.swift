@@ -17,11 +17,15 @@ public extension EnvironmentValues {
 
 public extension SwiftUI.Font {
 	func uiFont(in environment: EnvironmentValues) -> UIFont? {
+#if compiler(>=6.2)
 		if #available(iOS 26.0, *) {
 			return uiFont(in: environment.fontResolutionContext)
 		} else {
 			return uiFont
 		}
+#else
+		return uiFont
+#endif
 	}
 	
 	var uiFont: UIFont? {
@@ -29,10 +33,12 @@ public extension SwiftUI.Font {
 		return SwiftUI.Font.UIFontProvider(from: base)?.uiFont
 	}
 	
+#if compiler(>=6.2)
 	@available(iOS 26.0, *)
 	func uiFont(in context: SwiftUI.Font.Context) -> UIFont? {
 		return resolve(in: context).ctFont
 	}
+#endif
 }
 
 fileprivate extension UIFont {
