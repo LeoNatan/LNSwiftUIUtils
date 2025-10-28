@@ -55,3 +55,13 @@ public extension AttributeContainer {
 	}
 }
 
+@available(iOS 15, *)
+public extension AttributedString {
+	var swiftUIToUIKit: AttributedString {
+		var uikit = self
+		
+		runs.forEach { uikit[$0.range].setAttributes($0.attributes.swiftUIToUIKit) }
+		
+		return uikit
+	}
+}
